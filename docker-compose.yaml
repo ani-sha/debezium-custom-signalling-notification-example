@@ -26,6 +26,7 @@ services:
     image: quay.io/debezium/connect:${DEBEZIUM_VERSION}
     ports:
       - 8083:8083
+      - 8000:8000
 
     links:
       - kafka
@@ -36,5 +37,6 @@ services:
       - CONFIG_STORAGE_TOPIC=my_connect_configs
       - OFFSET_STORAGE_TOPIC=my_connect_offsets
       - STATUS_STORAGE_TOPIC=my_connect_statuses
+      - DEBEZIUM_CHANNEL_ENDPOINT=http://debezium-channel:8000/signal
     volumes:
      - ./target/debezium-custom-signalling-notification-example-1.0-SNAPSHOT.jar:/kafka/connect/debezium-connector-postgres/debezium-custom-signalling-notification-example-1.0-SNAPSHOT.jar

@@ -5,24 +5,20 @@ import io.debezium.config.CommonConnectorConfig;
 import io.debezium.pipeline.signal.SignalRecord;
 import io.debezium.pipeline.signal.channels.SignalChannelReader;
 import io.debezium.pipeline.signal.channels.jmx.JmxSignalChannel;
+import model.SignalClient;
+import model.SignalServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HttpEmbeddedServerSignalChannel implements SignalChannelReader {
+public class HttpSignalChannel implements SignalChannelReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(JmxSignalChannel.class);
-    public static final String CHANNEL_NAME = "http-server";
+    public static final String CHANNEL_NAME = "http";
     private static final List<SignalRecord> SIGNALS = new ArrayList<>();
     public CommonConnectorConfig connectorConfig;
-
-    private final int PORT = 8080;
 
     @Override
     public String name() {
@@ -39,32 +35,26 @@ public class HttpEmbeddedServerSignalChannel implements SignalChannelReader {
         LOGGER.trace("Reading signaling events from endpoint");
 
         try {
-            // Get the signals from the endpoint
-            HttpClient httpClient = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:" + PORT + "/signals"))
-                    .build();
+            // Start Signal Server
+            SignalServer.start();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            // Get signal response from endpoint
+            String response = SignalClient.getSignalData();
 
-            if (response.statusCode() == 200) {
-                String signalJson = response.body();
+            ObjectMapper mapper = new ObjectMapper();
+            String[] signalLines = response.split("\n");
 
-                ObjectMapper mapper = new ObjectMapper();
-                String[] signalLines = signalJson.split("\n");
-
-                for (String signalLine : signalLines) {
-                    SignalRecord signal = mapper.readValue(signalLine, SignalRecord.class);
-                    SIGNALS.add(signal);
-                }
+            for (String signalLine : signalLines) {
+                SignalRecord signal = mapper.readValue(signalLine, SignalRecord.class);
+                SIGNALS.add(signal);
+                LOGGER.trace("Signal '{}' from endpoint", signal.toString());
             }
-        } catch (IOException | InterruptedException | RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             LOGGER.warn("Exception while preparing to process the signal '{}' from the endpoint", e.getMessage());
             e.printStackTrace();
         }
         return SIGNALS;
     }
-
 
     @Override
     public void close() {

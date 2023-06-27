@@ -1,1 +1,1 @@
-io.debezium.examples.notification.HttpEmbeddedServerNotificationChannel
+io.debezium.examples.notification.HttpNotificationChannel

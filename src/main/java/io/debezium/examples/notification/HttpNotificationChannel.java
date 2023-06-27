@@ -8,8 +8,8 @@ import io.debezium.pipeline.signal.SignalRecord;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class HttpEmbeddedServerNotificationChannel implements NotificationChannel {
-    public static final String CHANNEL_NAME = "http-server";
+public class HttpNotificationChannel implements NotificationChannel {
+    public static final String CHANNEL_NAME = "http";
     public static final Queue<SignalRecord> SIGNALS = new ConcurrentLinkedQueue<>();
 
     @Override

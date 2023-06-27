@@ -1,1 +1,1 @@
-io.debezium.examples.signal.HttpEmbeddedServerSignalChannel
+io.debezium.examples.signal.HttpSignalChannel
