@@ -1,0 +1,15 @@
+[
+  {
+    "httpRequest" : {
+      "method" : "GET",
+      "path" : "/api/signal",
+      "queryStringParameters" : {
+        "code" : ["10969"]
+      }
+    },
+    "httpResponse" : {
+      "body" : "{\"type\":\"execute-snapshot\",\"data\":{\"data-collections\":[\"schema1.table1\",\"schema1.table2\"],\"type\":\"INCREMENTAL\"}}",
+      "statusCode": 200
+    }
+  }
+]

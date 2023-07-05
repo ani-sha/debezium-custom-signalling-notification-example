@@ -4,18 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.debezium.config.CommonConnectorConfig;
 import io.debezium.pipeline.signal.SignalRecord;
 import io.debezium.pipeline.signal.channels.SignalChannelReader;
-import io.debezium.pipeline.signal.channels.jmx.JmxSignalChannel;
-import model.SignalClient;
-import model.SignalServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 public class HttpSignalChannel implements SignalChannelReader {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JmxSignalChannel.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpSignalChannel.class);
     public static final String CHANNEL_NAME = "http";
     private static final List<SignalRecord> SIGNALS = new ArrayList<>();
     public CommonConnectorConfig connectorConfig;
@@ -32,27 +33,35 @@ public class HttpSignalChannel implements SignalChannelReader {
 
     @Override
     public List<SignalRecord> read() {
-        LOGGER.trace("Reading signaling events from endpoint");
+        LOGGER.info("Reading signaling events from endpoint");
 
         try {
-            // Start Signal Server
-            SignalServer.start();
+            String requestUrl = "http://localhost:1080/api/signal?code=10969";
+            URL url = new URL(requestUrl);
 
-            // Get signal response from endpoint
-            String response = SignalClient.getSignalData();
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            con.setRequestProperty("Content-Type", "application/json");
 
-            ObjectMapper mapper = new ObjectMapper();
-            String[] signalLines = response.split("\n");
-
-            for (String signalLine : signalLines) {
-                SignalRecord signal = mapper.readValue(signalLine, SignalRecord.class);
-                SIGNALS.add(signal);
-                LOGGER.trace("Signal '{}' from endpoint", signal.toString());
+            int status = con.getResponseCode();
+            if (status == HttpURLConnection.HTTP_OK) {
+                ObjectMapper mapper = new ObjectMapper();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    SignalRecord signal = mapper.readValue(line, SignalRecord.class);
+                    SIGNALS.add(signal);
+                    LOGGER.trace("Signal '{}' from endpoint", signal.toString());
+                }
+                reader.close();
+            } else {
+                LOGGER.warn("Error while reading signaling events from endpoint: {}", status);
             }
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("Exception while preparing to process the signal '{}' from the endpoint", e.getMessage());
             e.printStackTrace();
         }
+
         return SIGNALS;
     }
 

@@ -6,6 +6,15 @@ Export the version of Debezium you want to use and start the containers:
 
 ```
 export DEBEZIUM_VERSION=2.3
+```
+
+Start custom connect container:
+```
+docker build -t custom-connect .
+```
+
+Start rest of the services:
+```
 docker-compose up -d
 ```
 

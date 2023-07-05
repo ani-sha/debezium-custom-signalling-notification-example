@@ -1,5 +1,14 @@
 version: '2'
 services:
+  mockServer:
+    image: mockserver/mockserver:latest
+    ports:
+      - 1080:1080
+    environment:
+      - MOCKSERVER_WATCH_INITIALIZATION_JSON=true
+      - MOCKSERVER_INITIALIZATION_JSON_PATH=/config/initializerJson.json
+    volumes:
+        - ./initializerJson.json:/config/initializerJson.json
   zookeeper:
     image: quay.io/debezium/zookeeper:${DEBEZIUM_VERSION}
     ports:
@@ -8,7 +17,6 @@ services:
       - 3888:3888
   kafka:
     image: quay.io/debezium/kafka:${DEBEZIUM_VERSION}
-
     ports:
       - 9092:9092
     links:
@@ -23,20 +31,18 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
   connect:
-    image: quay.io/debezium/connect:${DEBEZIUM_VERSION}
+    image: docker.io/library/custom-connect
     ports:
       - 8083:8083
-      - 8000:8000
-
     links:
       - kafka
       - postgres
+      - mockServer
     environment:
       - BOOTSTRAP_SERVERS=kafka:9092
       - GROUP_ID=1
       - CONFIG_STORAGE_TOPIC=my_connect_configs
       - OFFSET_STORAGE_TOPIC=my_connect_offsets
       - STATUS_STORAGE_TOPIC=my_connect_statuses
-      - DEBEZIUM_CHANNEL_ENDPOINT=http://debezium-channel:8000/signal
-    volumes:
-     - ./target/debezium-custom-signalling-notification-example-1.0-SNAPSHOT.jar:/kafka/connect/debezium-connector-postgres/debezium-custom-signalling-notification-example-1.0-SNAPSHOT.jar
+#    volumes:
+#     - ./out/artifacts/debezium_custom_signalling_notification_example_jar/debezium-custom-signalling-notification-example.jar:/kafka/connect/debezium-connector-postgres/debezium-custom-signalling-notification-example-1.0-SNAPSHOT.jar
